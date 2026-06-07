@@ -82,11 +82,34 @@ SAFE_C = "#1b998b"
 # ----------------------------------------------------------------------------
 def _find_data() -> str:
     here = os.path.dirname(os.path.abspath(__file__))
-    for p in ["creditcard.csv", "data/creditcard.csv",
-              os.path.join(here, "creditcard.csv"),
-              os.path.join(here, "data", "creditcard.csv")]:
+    candidates = [
+        "creditcard.csv", "data/creditcard.csv",
+        os.path.join(here, "creditcard.csv"),
+        os.path.join(here, "data", "creditcard.csv"),
+    ]
+    for p in candidates:
         if os.path.exists(p):
             return p
+
+    # Try downloading via Kaggle API (Streamlit Cloud: set KAGGLE_USERNAME & KAGGLE_KEY in secrets)
+    try:
+        import kaggle  # noqa: F401
+        import zipfile
+        kaggle.api.authenticate()
+        kaggle.api.dataset_download_files(
+            "mlg-ulb/creditcardfraud", path=here, unzip=False, quiet=False
+        )
+        zip_path = os.path.join(here, "creditcardfraud.zip")
+        if os.path.exists(zip_path):
+            with zipfile.ZipFile(zip_path, "r") as z:
+                z.extractall(here)
+            os.remove(zip_path)
+        csv = os.path.join(here, "creditcard.csv")
+        if os.path.exists(csv):
+            return csv
+    except Exception:
+        pass
+
     return ""
 
 
